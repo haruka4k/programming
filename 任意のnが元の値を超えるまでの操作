@@ -1,0 +1,30 @@
+def input_int(prompt):
+    while True:
+        try:
+            value = int(input(prompt))
+            return value
+        except ValueError:
+            print("無効な入力です。整数を入力してください。")
+
+number = input_int("整数を入力してください: ")
+original = number * 6 + 4
+Number = original  # 初期値として original を使う
+
+print(f"入力された値を6倍して4を足した値は {original} です。")
+
+while True:
+    if int(Number) % 3 == 0:
+        print("この値はiGCO2が可能です")
+        Number = (Number - 1) * 4 / 3
+    elif int(Number) % 3 == 1:
+        print("この値はiGCO3が可能です")
+        Number = Number * 4
+    else:  # % 3 == 2
+        print("この値はiGCO1が可能です")
+        Number = (Number - 1) * 2 / 3
+    print(f"適用後 {Number}")
+
+    # 変化後の値が original より大きくなったら終了
+    if Number > original:
+        print("変化後の値が original より大きくなったため、処理を終了します。")
+        break
