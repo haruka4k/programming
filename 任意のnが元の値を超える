@@ -1,0 +1,39 @@
+def input_int(prompt):
+    while True:
+        try:
+            value = int(input(prompt))
+            return value
+        except ValueError:
+            print("無効な入力です。整数を入力してください。")
+
+number = input_int("整数を入力してください: ")
+original = number * 6 + 4
+Number = original  # 初期値として original を使う
+history = []  # 操作履歴
+
+print(f"入力された値を6倍して4を足した値は {original} です。")
+
+while True:
+    if int(Number) % 3 == 0:
+        operation = "iGCO2"
+        print(f"{Number} は {operation} が可能です")
+        Number = (Number - 1) * 4 / 3
+    elif int(Number) % 3 == 1:
+        operation = "iGCO3"
+        print(f"{Number} は {operation} が可能です")
+        Number = Number * 4
+    else:  # % 3 == 2
+        operation = "iGCO1"
+        print(f"{Number} は {operation} が可能です")
+        Number = (Number - 1) * 2 / 3
+
+    history.append(operation)
+    print(f"適用後の値は {Number}")
+
+    if Number > original:
+        print("変化後の値が original より大きくなったため、処理を終了します。")
+        break
+
+# 操作履歴の表示（→で連結）
+print("\n--- 操作履歴 ---")
+print(" → ".join(history))
