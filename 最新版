@@ -1,9 +1,9 @@
-from sympy import symbols, simplify, Mod, Eq, solve, gcd
+from sympy import symbols, simplify, Eq, Mod, numer, denom, solve
 
-# 記号定義
+# 変数定義
 n = symbols('n')
 
-# 操作ルール定義
+# 操作ルール関数（ルール1〜3）
 def apply_rule(expr, rule):
     if rule == 1:
         return (2 * expr - 1) / 3
@@ -12,61 +12,59 @@ def apply_rule(expr, rule):
     elif rule == 3:
         return 4 * expr + 2
     else:
-        raise ValueError("ルールは1〜3で指定してください")
+        raise ValueError("無効なルール番号です")
 
-# 終端ルールの構文条件（分子、分母の形で返す）
-def get_terminal_condition(expr, rule):
-    if rule == 1:
-        cond_expr = simplify((expr - 1))   # (f(n) - 1)/2 → 分子
-        modulus = 2
-    elif rule == 2:
-        cond_expr = simplify(expr)         # f(n)/4 → 分子
-        modulus = 4
-    elif rule == 3:
-        cond_expr = simplify(expr - 6)     # (f(n) - 6)/12 → 分子
-        modulus = 12
+# 終端ルールによる構文条件式の生成（xとおいてから変形）
+def get_mod_condition_expr(f_n, terminal_rule):
+    x = f_n  # f(n) を x と置く
+
+    if terminal_rule == 1:
+        expr = (x - 1) / 2
+    elif terminal_rule == 2:
+        expr = x / 4
+    elif terminal_rule == 3:
+        expr = (x - 6) / 12
     else:
-        raise ValueError("ルールは1〜3で指定してください")
-    return cond_expr, modulus
+        raise ValueError("無効な終端ルール")
 
-# n に関する mod 条件を導出（f(n)の分子とmodから）
-def derive_n_mod_condition(numerator, modulus):
-    # numerator ≡ 0 mod modulus → 解を n について求める
-    congruence = Eq(Mod(numerator, modulus), 0)
-    solutions = solve(congruence, n)
-    return solutions
+    # 分子・分母取得
+    num = numer(simplify(expr))
+    mod_val = denom(simplify(expr))
 
-# --- 実行部 ---
-rules_input = input("操作系列をカンマ区切りで入力（例: 1,2,3）: ")
-rule_sequence = [int(x.strip()) for x in rules_input.split(",")]
+    # モジュラー式生成
+    return Eq(Mod(num, mod_val), 0), num, mod_val
 
-# 1. 増加量関数 f(n)
+# === メイン処理 ===
+# 入力例: 1,1,1
+rules_input = input("操作系列（例: 1,1,1）: ")
+rule_sequence = [int(x.strip()) for x in rules_input.split(',')]
+
+# f(n)の構築
 expr = n
-for rule in rule_sequence:
-    expr = apply_rule(expr, rule)
+for r in rule_sequence:
+    expr = apply_rule(expr, r)
 f_n = simplify(expr)
 
-# 2. 増加率関数 γ(n)
-gamma = simplify(f_n / n)
-
-# 3. 終端操作の取得
+# 終端ルール
 terminal_rule = rule_sequence[-1]
 
-# 4. 構文条件（分子, 分母）を取得
-numerator, modulus = get_terminal_condition(f_n, terminal_rule)
+# 構文条件の導出
+congruence, num_expr, mod_base = get_mod_condition_expr(f_n, terminal_rule)
 
-# 5. n に関する条件を導出
-print(f"\n操作系列: {rule_sequence}")
-print(f"増加量関数 f(n): {f_n}")
-print(f"増加率関数 γ(n): {gamma}")
-print(f"終端操作: ルール{terminal_rule}")
-print(f"構文条件: {numerator} ≡ 0 mod {modulus}")
+# 出力
+print(f"\nf(n) = {f_n}")
+print(f"終端ルール: ルール{terminal_rule}")
+print(f"構文変形: 分子 = {num_expr}, 分母 = {mod_base}")
+print(f"⇒ 構文条件: {num_expr} ≡ 0 mod {mod_base}")
+print(f"合同式: {congruence}")
 
-# 6. n に関するmod条件を解く
-print("\nn に関する構文的一致条件:")
-n_solutions = solve(Eq(Mod(numerator, modulus), 0), n)
+# nに関する解を導出（可能なら）
+try:
+    sol = solve(congruence, n)
+    if sol:
+        print("n に関する解:", sol)
+    else:
+        print("解なし、または式にnが含まれていません")
+except Exception as e:
+    print("エラー:", e)
 
-if n_solutions:
-    print("n ≡", n_solutions[0], f"mod {modulus // gcd(numerator.as_numer_denom()[0].as_coefficients_dict().get(n, 1), modulus)}")
-else:
-    print("条件を満たす n の形式が導出できませんでした")
