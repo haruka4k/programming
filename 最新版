@@ -1,4 +1,4 @@
-from sympy import symbols, simplify, Mod
+from sympy import symbols, simplify, Mod, Eq, solve, gcd
 
 # 記号定義
 n = symbols('n')
@@ -12,42 +12,61 @@ def apply_rule(expr, rule):
     elif rule == 3:
         return 4 * expr + 2
     else:
-        raise ValueError("ルールは1〜3のいずれかで指定してください")
+        raise ValueError("ルールは1〜3で指定してください")
 
-# f(n) が指定ルールの構文に一致するか？
-def check_syntax(f, expected_rule):
-    mod2 = simplify(Mod(f, 2))
-    mod4 = simplify(Mod(f, 4))
-    mod12 = simplify(Mod(f, 12))
-
-    if expected_rule == 1:
-        return mod2 == 1  # 奇数
-    elif expected_rule == 2:
-        return mod4 == 0  # 4の倍数
-    elif expected_rule == 3:
-        return mod12 == 6  # 12a + 6 型
+# 終端ルールの構文条件（分子、分母の形で返す）
+def get_terminal_condition(expr, rule):
+    if rule == 1:
+        cond_expr = simplify((expr - 1))   # (f(n) - 1)/2 → 分子
+        modulus = 2
+    elif rule == 2:
+        cond_expr = simplify(expr)         # f(n)/4 → 分子
+        modulus = 4
+    elif rule == 3:
+        cond_expr = simplify(expr - 6)     # (f(n) - 6)/12 → 分子
+        modulus = 12
     else:
-        return False
+        raise ValueError("ルールは1〜3で指定してください")
+    return cond_expr, modulus
+
+# n に関する mod 条件を導出（f(n)の分子とmodから）
+def derive_n_mod_condition(numerator, modulus):
+    # numerator ≡ 0 mod modulus → 解を n について求める
+    congruence = Eq(Mod(numerator, modulus), 0)
+    solutions = solve(congruence, n)
+    return solutions
 
 # --- 実行部 ---
-rules_input = input("操作ルールをカンマ区切りで入力（例: 1,2,3）: ")
+rules_input = input("操作系列をカンマ区切りで入力（例: 1,2,3）: ")
 rule_sequence = [int(x.strip()) for x in rules_input.split(",")]
 
-# f(n) 構築
+# 1. 増加量関数 f(n)
 expr = n
 for rule in rule_sequence:
     expr = apply_rule(expr, rule)
 f_n = simplify(expr)
 
-# 終端操作（系列の最後）
+# 2. 増加率関数 γ(n)
+gamma = simplify(f_n / n)
+
+# 3. 終端操作の取得
 terminal_rule = rule_sequence[-1]
 
-# 出力
-print(f"\n構築された関数 f(n):\nf(n) = {f_n}")
-print(f"終端操作（系列の最後のルール）: ルール{terminal_rule}")
+# 4. 構文条件（分子, 分母）を取得
+numerator, modulus = get_terminal_condition(f_n, terminal_rule)
 
-# 一致チェック
-if check_syntax(f_n, terminal_rule):
-    print("→ f(n) の構文は終端操作に一致しています（OK）")
+# 5. n に関する条件を導出
+print(f"\n操作系列: {rule_sequence}")
+print(f"増加量関数 f(n): {f_n}")
+print(f"増加率関数 γ(n): {gamma}")
+print(f"終端操作: ルール{terminal_rule}")
+print(f"構文条件: {numerator} ≡ 0 mod {modulus}")
+
+# 6. n に関するmod条件を解く
+print("\nn に関する構文的一致条件:")
+n_solutions = solve(Eq(Mod(numerator, modulus), 0), n)
+
+if n_solutions:
+    print("n ≡", n_solutions[0], f"mod {modulus // gcd(numerator.as_numer_denom()[0].as_coefficients_dict().get(n, 1), modulus)}")
 else:
-    print("→ ⚠ f(n) の構文は終端操作と一致していません（注意）")
+    print("条件を満たす n の形式が導出できませんでした")
