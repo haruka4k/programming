@@ -1,9 +1,9 @@
-from sympy import symbols, simplify
+from sympy import symbols, simplify, Mod
 
-# 変数 n を定義
+# 記号定義
 n = symbols('n')
 
-# 各ルールに対して代数操作を定義
+# 操作ルール定義
 def apply_rule(expr, rule):
     if rule == 1:
         return (2 * expr - 1) / 3
@@ -12,20 +12,42 @@ def apply_rule(expr, rule):
     elif rule == 3:
         return 4 * expr + 2
     else:
-        raise ValueError("ルールは1〜3の整数で指定してください")
+        raise ValueError("ルールは1〜3のいずれかで指定してください")
 
-# --- 入力 ---
+# f(n) が指定ルールの構文に一致するか？
+def check_syntax(f, expected_rule):
+    mod2 = simplify(Mod(f, 2))
+    mod4 = simplify(Mod(f, 4))
+    mod12 = simplify(Mod(f, 12))
+
+    if expected_rule == 1:
+        return mod2 == 1  # 奇数
+    elif expected_rule == 2:
+        return mod4 == 0  # 4の倍数
+    elif expected_rule == 3:
+        return mod12 == 6  # 12a + 6 型
+    else:
+        return False
+
+# --- 実行部 ---
 rules_input = input("操作ルールをカンマ区切りで入力（例: 1,2,3）: ")
-rules = [int(x.strip()) for x in rules_input.split(",")]
+rule_sequence = [int(x.strip()) for x in rules_input.split(",")]
 
-# 初期値は代数変数 n
+# f(n) 構築
 expr = n
-
-# ルールを順に適用
-for rule in rules:
+for rule in rule_sequence:
     expr = apply_rule(expr, rule)
+f_n = simplify(expr)
 
-# 結果の出力（代数式の構文）
-simplified = simplify(expr)
-print("\n適用された操作系列に対応する関数 f(n):")
-print(f"f(n) = {simplified}")
+# 終端操作（系列の最後）
+terminal_rule = rule_sequence[-1]
+
+# 出力
+print(f"\n構築された関数 f(n):\nf(n) = {f_n}")
+print(f"終端操作（系列の最後のルール）: ルール{terminal_rule}")
+
+# 一致チェック
+if check_syntax(f_n, terminal_rule):
+    print("→ f(n) の構文は終端操作に一致しています（OK）")
+else:
+    print("→ ⚠ f(n) の構文は終端操作と一致していません（注意）")
