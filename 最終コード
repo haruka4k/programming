@@ -1,0 +1,78 @@
+import sympy as sp
+
+# 変数の定義
+n = sp.Symbol('n')
+
+# 各操作ルールの適用
+def apply_rule(expr, rule):
+    if rule == 1:
+        return (2 * expr - 1) / 3
+    elif rule == 2:
+        return 4 * expr / 3
+    elif rule == 3:
+        return 4 * expr + 2
+    else:
+        raise ValueError("不正なルール")
+
+# 増加量関数 f(n) の構築
+def build_fn(rule_sequence):
+    expr = n
+    for rule in rule_sequence:
+        expr = apply_rule(expr, rule)
+    return sp.simplify(expr)
+
+# 増加率関数 γ(n) = (6f(n)+4)/(6n+4)
+def compute_growth_rate_fn(f_n):
+    return sp.simplify((6 * f_n + 4) / (6 * n + 4))
+
+# 終端ルールに応じた構文条件 (n ≡ r mod m) を導出
+def extract_congruence_from_fn(f_n, terminal_rule):
+    if terminal_rule == 1:
+        expr = (f_n - 1) / 2
+    elif terminal_rule == 2:
+        expr = f_n / 4
+    elif terminal_rule == 3:
+        expr = (f_n - 6) / 12
+    else:
+        raise ValueError("未知の終端ルール")
+
+    numer, denom = expr.as_numer_denom()
+    numer = sp.simplify(numer)
+    denom = sp.simplify(denom)
+    An = sp.expand(numer)
+    A = An.coeff(n)
+    B = sp.simplify(An - A * n)
+    A_inv = sp.mod_inverse(A, denom)
+    r = int((-B * A_inv) % denom)
+    return r, denom
+
+# 全体解析を一括で行う関数
+def full_analysis(rule_sequence):
+    f_n = build_fn(rule_sequence)
+    growth_rate_fn = compute_growth_rate_fn(f_n)
+    terminal_rule = rule_sequence[-1]
+    r, m = extract_congruence_from_fn(f_n, terminal_rule)
+    f_r = f_n.subs(n, r)
+
+    return {
+        "操作系列": rule_sequence,
+        "増加量関数 f(n)": f_n,
+        "増加率関数 γ(n)": growth_rate_fn,
+        "構文条件": f"n ≡ {r} mod {m}",
+        "最小の適用可能な n": r,
+        "6n+4": 6 * r + 4,
+        "6f(n)+4": 6 * f_r + 4,
+        "増加量": sp.simplify(6 * f_r + 4 - (6 * r + 4)),
+        "増加率（数値）": sp.simplify((6 * f_r + 4) / (6 * r + 4))
+    }
+
+# 🔷 外部入力（カンマ区切りで操作系列を入力）
+user_input = input("操作系列をカンマで区切って入力してください（例: 1,2,2）: ")
+rule_sequence = [int(x.strip()) for x in user_input.split(',')]
+
+# 🔷 解析と出力
+result = full_analysis(rule_sequence)
+
+# 🔷 整形して出力
+for key, value in result.items():
+    print(f"\n・{key}:\n{value}")
