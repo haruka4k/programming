@@ -1,8 +1,10 @@
 import sympy as sp
-n = sp.Symbol('n')
+import re
 from sympy import simplify, factor, Mod
 
-# 操作を適用
+n = sp.Symbol('n')
+
+# ルールの適用関数
 def apply_rule(expr, rule):
     if rule == 1:
         return (2 * expr - 1) / 3
@@ -13,14 +15,14 @@ def apply_rule(expr, rule):
     else:
         raise ValueError("不正なルール")
 
-# 増加量関数を生成
+# 増加量関数を構築
 def build_fn(rule_sequence):
     expr = n
     for rule in rule_sequence:
         expr = apply_rule(expr, rule)
     return simplify(expr)
 
-# 分母を抽出する泥臭い方法
+# 分子・分母を泥臭く抽出
 def robust_extract_numer_denom(f_n):
     numer, denom = f_n.as_numer_denom()
     if not denom.is_Integer:
@@ -28,7 +30,7 @@ def robust_extract_numer_denom(f_n):
         numer = simplify(f_n * denom)
     return numer, denom
 
-# 構文条件の導出
+# 終端操作による条件式構築
 def extract_condition_and_factors(f_n, terminal_rule):
     if terminal_rule == 1:
         condition_expr = (f_n - 1) / 2
@@ -38,17 +40,16 @@ def extract_condition_and_factors(f_n, terminal_rule):
         condition_expr = (f_n - 6) / 12
     else:
         raise ValueError("不正な終端ルール")
-    numerator = simplify(condition_expr.as_numer_denom()[0])
-    denominator = simplify(condition_expr.as_numer_denom()[1])
+    numerator, denominator = condition_expr.as_numer_denom()
     return {
         "条件式": condition_expr,
-        "分子": numerator,
-        "分母": denominator,
+        "分子": simplify(numerator),
+        "分母": simplify(denominator),
         "分子の因数分解": factor(numerator),
         "分母の因数分解": factor(denominator)
     }
 
-# 判別式の導出
+# 判別式（合同式）生成
 def derive_n_condition_strict(a, b):
     A = sp.LC(sp.expand(a), n)
     B = simplify(sp.expand(a) - A * n)
@@ -65,37 +66,41 @@ def derive_n_condition_strict(a, b):
 
 # 増加率関数
 def compute_growth_rate(f_n):
-    numerator = 6 * f_n + 4
-    denominator = 6 * n + 4
-    growth_rate = simplify(numerator / denominator)
-    return {
-        "増加率関数": growth_rate,
-        "分子": simplify(numerator),
-        "分母": simplify(denominator)
-    }
+    return simplify((6 * f_n + 4) / (6 * n + 4))
 
-# 一貫処理関数
-def full_analysis(rule_sequence):
+# 主処理：構文条件と r から実数代入
+def analyze_with_r(rule_sequence):
     f_n = build_fn(rule_sequence)
     numer, denom = robust_extract_numer_denom(f_n)
-    terminal = rule_sequence[-1]
     condition = derive_n_condition_strict(numer, denom)
-    condition_factored = extract_condition_and_factors(f_n, terminal)
-    growth_rate = compute_growth_rate(f_n)
+    
+    # r の抽出
+    match = re.search(r"n ≡ (.+?) mod (\d+)", condition["n ≡ r mod m"])
+    if not match:
+        return "r の抽出に失敗しました。"
+    r_val = sp.sympify(match.group(1))
+
+    # 実数代入して増加量・増加率を評価
+    six_r_plus_4 = simplify(6 * r_val + 4)
+    f_at_r = f_n.subs(n, r_val)
+    six_fn_plus_4 = simplify(6 * f_at_r + 4)
+    growth_rate_val = simplify(six_fn_plus_4 / six_r_plus_4)
 
     return {
         "操作系列": rule_sequence,
         "f(n)": f_n,
-        "条件式": condition_factored,
-        "判別式": condition,
-        "増加率関数": growth_rate
+        "最小の n (r)": r_val,
+        "f(r)": f_at_r,
+        "6r + 4": six_r_plus_4,
+        "6f(r) + 4": six_fn_plus_4,
+        "増加率": growth_rate_val
     }
 
-# 🔶 外部入力に対応：1,2,3 を受け取って [1, 2, 3] に変換
-user_input = input("操作系列をカンマで区切って入力してください（例：1,2,3）: ")
+# 入力と実行
+user_input = input("操作系列をカンマで区切って入力してください（例：1,2,2,2）: ")
 rule_sequence = [int(x.strip()) for x in user_input.split(',')]
+result = analyze_with_r(rule_sequence)
 
-# 実行
-result = full_analysis(rule_sequence)
-for key, value in result.items():
-    print(f"\n🟦 {key}:\n{value}")
+# 結果表示
+for key, val in result.items():
+    print(f"{key}: {val}")
