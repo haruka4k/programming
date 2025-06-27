@@ -1,28 +1,25 @@
-# GCOルール適用関数（修正版）
-def gco_step_modified_fixed(a):
-    if a % 2 == 1:
-        return (3 * a + 1) // 2, "R1"
-    elif a % 4 == 0:
-        return (3 * a) // 4, "R2"
-    elif a % 4 == 2:
-        return int(a / 4 - 0.5), "R3"
-    else:
-        return a, "Invalid"
-
-# 最初の6n+4型になるまで通常のCollatz操作を進める
 def find_first_6n4_fixed(n):
     steps = []
     while n % 6 != 4:
         steps.append(n)
         if n % 2 == 0:
-            n = n // 2
+            n //= 2
         else:
             n = 3 * n + 1
     steps.append(n)
     return n, steps
 
-# GCO圧縮系列の生成
-def generate_gco_sequence_modified_fixed(n_start, max_steps=1000):
+def gco_step_modified_r3_new(a):
+    if a % 2 == 1:
+        return (3 * a + 1) // 2, "R1"
+    elif a % 4 == 0:
+        return (3 * a) // 4, "R2"
+    elif a % 4 == 2:
+        return (a - 2) // 4, "R3"
+    else:
+        return a, "Invalid"
+
+def generate_gco_sequence_modified_r3_new(n_start, max_steps=1000):
     first_n, pre_steps = find_first_6n4_fixed(n_start)
     a = (first_n - 4) // 6
     gco_seq = [6 * a + 4]
@@ -33,7 +30,7 @@ def generate_gco_sequence_modified_fixed(n_start, max_steps=1000):
 
     while a != 0 and a not in seen and steps < max_steps:
         seen.add(a)
-        a_next, rule = gco_step_modified_fixed(a)
+        a_next, rule = gco_step_modified_r3_new(a)
         if rule == "Invalid":
             break
         a = a_next
@@ -42,7 +39,6 @@ def generate_gco_sequence_modified_fixed(n_start, max_steps=1000):
         steps += 1
 
     if a == 0:
-        # ✓4 を除外し、→2 →1 だけ追加
         gco_seq.extend([2, 1])
         gco_rules.extend(["→2", "→1"])
     elif a in seen:
@@ -51,44 +47,30 @@ def generate_gco_sequence_modified_fixed(n_start, max_steps=1000):
 
     return pre_steps, gco_seq, gco_rules
 
-# 表示関数（✓4除去＋記号分類＋ステップ表示）
 def print_gco_sequence_summary(n_start, pre_steps, gco_seq, gco_rules):
-    total_steps = len(pre_steps) + len(gco_rules)
-    steps_str = " → ".join(map(str, pre_steps)) if pre_steps else ""
-    arrow_map = {
-        "R1": "→₁",
-        "R2": "→₂",
-        "R3": "→₃",
-        "⟳": "⟳",
-        "→2": "⇒₂",
-        "→1": "⇒₁"
-    }
+    summary = f"初期値: {n_start}, 総ステップ数: {len(pre_steps) - 1 + len(gco_rules) + 2 if gco_seq[-2:] == [2, 1] else 0}"
+    normal_part = " → ".join(str(n) for n in pre_steps)
+    compressed_parts = []
+    for i in range(len(gco_rules)):
+        arrow = "→₁" if gco_rules[i] == "R1" else "→₂" if gco_rules[i] == "R2" else "→₃" if gco_rules[i] == "R3" else gco_rules[i]
+        compressed_parts.append(f"{gco_seq[i]} {arrow}")
+    compressed_parts.append(str(gco_seq[-1]))
+    compressed_output = " ".join(compressed_parts)
+    return summary, normal_part, compressed_output
 
-    if "✓" in gco_rules:
-        index = gco_rules.index("✓")
-        gco_seq = gco_seq[:index] + gco_seq[index+1:]
-        gco_rules = gco_rules[:index] + gco_rules[index+1:]
-
-    compressed_str = str(gco_seq[0])
-    for val, rule in zip(gco_seq[1:], gco_rules):
-        compressed_str += f" {arrow_map.get(rule, '→')} {val}"
-
-    summary = f"初期値: {n_start}, 総ステップ数: {total_steps}"
-    return summary, steps_str, compressed_str
-
-# ==== 実行部 ====
+# 🔷 メイン処理
 if __name__ == "__main__":
     try:
-        user_input = int(input("初期値を入力してください（自然数）: "))
-        if user_input < 1:
-            raise ValueError("自然数を入力してください。")
-        pre_steps, gco_seq, gco_rules = generate_gco_sequence_modified_fixed(user_input)
-        summary, normal_part, compressed_part = print_gco_sequence_summary(user_input, pre_steps, gco_seq, gco_rules)
+        n_input = int(input("初期値を入力してください（自然数）: "))
+        pre_steps, gco_seq, gco_rules = generate_gco_sequence_modified_r3_new(n_input)
+        summary, normal_part, compressed_output = print_gco_sequence_summary(n_input, pre_steps, gco_seq, gco_rules)
 
-        print("\n" + summary)
-        if normal_part:
-            print(normal_part)
-        print(compressed_part)
+        print("\n🧾 概要:")
+        print(summary)
+        print("\n🔹 通常のコラッツ操作（6n+4 に至るまで）:")
+        print(normal_part)
+        print("\n🔸 GCO圧縮系列（✓4 除去）:")
+        print(compressed_output)
 
-    except ValueError as e:
-        print("エラー:", e)
+    except ValueError:
+        print("自然数を入力してください。")
