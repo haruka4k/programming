@@ -47,29 +47,41 @@ def generate_gco_sequence_modified_r3_new(n_start, max_steps=1000):
 
     return pre_steps, gco_seq, gco_rules
 
-def print_gco_sequence_summary(n_start, pre_steps, gco_seq, gco_rules):
-    summary = f"初期値: {n_start}, 総ステップ数: {len(pre_steps) - 1 + len(gco_rules) + 2 if gco_seq[-2:] == [2, 1] else 0}"
+def print_gco_sequence_summary_clean_root(n_start, pre_steps, gco_seq, gco_rules):
+    summary = f"初期値: {n_start}, 総ステップ数: {len(pre_steps) - 1 + len(gco_rules) + (2 if gco_seq[-3:] == [4, 2, 1] else 0)}"
     normal_part = " → ".join(str(n) for n in pre_steps)
+
     compressed_parts = []
     for i in range(len(gco_rules)):
-        arrow = "→₁" if gco_rules[i] == "R1" else "→₂" if gco_rules[i] == "R2" else "→₃" if gco_rules[i] == "R3" else gco_rules[i]
-        compressed_parts.append(f"{gco_seq[i]} {arrow}")
-    compressed_parts.append(str(gco_seq[-1]))
+        val = gco_seq[i]
+        rule = gco_rules[i]
+        if rule in ["→2", "→1"]:
+            continue  # 根の処理は最後にまとめて記述
+        arrow = "→₁" if rule == "R1" else "→₂" if rule == "R2" else "→₃" if rule == "R3" else rule
+        compressed_parts.append(f"{val} {arrow}")
+    
+    if gco_seq[-3:] == [4, 2, 1]:
+        compressed_parts.append("4 → 2 → 1")
+    else:
+        compressed_parts.append(str(gco_seq[-1]))
+
     compressed_output = " ".join(compressed_parts)
     return summary, normal_part, compressed_output
 
-# 🔷 メイン処理
+# 🔷 メイン処理（input対応）
 if __name__ == "__main__":
     try:
         n_input = int(input("初期値を入力してください（自然数）: "))
         pre_steps, gco_seq, gco_rules = generate_gco_sequence_modified_r3_new(n_input)
-        summary, normal_part, compressed_output = print_gco_sequence_summary(n_input, pre_steps, gco_seq, gco_rules)
+        summary, normal_part, compressed_output = print_gco_sequence_summary_clean_root(
+            n_input, pre_steps, gco_seq, gco_rules
+        )
 
         print("\n🧾 概要:")
         print(summary)
         print("\n🔹 通常のコラッツ操作（6n+4 に至るまで）:")
         print(normal_part)
-        print("\n🔸 GCO圧縮系列（✓4 除去）:")
+        print("\n🔸 GCO圧縮系列:")
         print(compressed_output)
 
     except ValueError:
