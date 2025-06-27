@@ -1,35 +1,18 @@
-# ===== ANSIカラー定義 =====
-def color_text(text, color):
-    colors = {
-        "red": "\033[91m",
-        "green": "\033[92m",
-        "yellow": "\033[93m",
-        "blue": "\033[94m",
-        "magenta": "\033[95m",
-        "cyan": "\033[96m",
-        "reset": "\033[0m"
-    }
-    return f"{colors.get(color, '')}{text}{colors['reset']}"
-
-# ===== GCOルール適用 =====
-def gco_step(a):
-    n = (a - 4) // 6
-    if n % 2 == 1:
-        a = (3 * a + 2) // 2
-        return a, "R1"
-    elif n % 4 == 0:
-        a = a // 2
-        return a, "R2"
-    elif n % 4 == 2:
-        a = (3 * a + 2) // 4
-        return a, "R3"
+# GCOルール適用関数（修正版）
+def gco_step_modified_fixed(a):
+    if a % 2 == 1:
+        return (3 * a + 1) // 2, "R1"
+    elif a % 4 == 0:
+        return (3 * a) // 4, "R2"
+    elif a % 4 == 2:
+        return int(a / 4 - 0.5), "R3"
     else:
         return a, "Invalid"
 
-# ===== 初期値を6n+4に変換 =====
-def find_first_6n4(n):
+# 初期値から最初の6n+4型になるまで通常のCollatz操作を進める
+def find_first_6n4_fixed(n):
     steps = []
-    while (n - 4) % 6 != 0:
+    while n % 6 != 4:
         steps.append(n)
         if n % 2 == 0:
             n = n // 2
@@ -38,54 +21,57 @@ def find_first_6n4(n):
     steps.append(n)
     return n, steps
 
-# ===== GCO圧縮列を生成 =====
-def generate_gco_sequence(n_start, max_steps=1000):
-    first_a, pre_steps = find_first_6n4(n_start)
-    a = first_a
-    gco_seq = [a]
+# GCO圧縮系列の生成
+def generate_gco_sequence_modified_fixed(n_start, max_steps=1000):
+    first_n, pre_steps = find_first_6n4_fixed(n_start)
+    a = (first_n - 4) // 6
+    gco_seq = [6 * a + 4]
     gco_rules = []
 
-    while a != 4 and len(gco_seq) < max_steps:
-        a, rule = gco_step(a)
+    seen = set()
+    steps = 0
+
+    while a != 0 and a not in seen and steps < max_steps:
+        seen.add(a)
+        a_next, rule = gco_step_modified_fixed(a)
         if rule == "Invalid":
             break
-        gco_seq.append(a)
+        a = a_next
+        gco_seq.append(6 * a + 4)
         gco_rules.append(rule)
+        steps += 1
 
-    if a == 4:
+    if a == 0:
+        # ✓4 を除外し、→2 →1 だけ追加
         gco_seq.extend([2, 1])
         gco_rules.extend(["→2", "→1"])
+    elif a in seen:
+        gco_seq.append(6 * a + 4)
+        gco_rules.append("⟳")
 
     return pre_steps, gco_seq, gco_rules
 
-# ===== 色付き出力（矢印だけ） =====
-def print_gco_sequence_colored_line(pre_steps, gco_seq, gco_rules):
-    def color_arrow(rule):
-        if rule == "R1":
-            return color_text("→", "red")
-        elif rule == "R2":
-            return color_text("→", "yellow")
-        elif rule == "R3":
-            return color_text("→", "magenta")
-        elif rule == "→2":
-            return color_text("→", "blue")
-        elif rule == "→1":
-            return color_text("→", "green")
-        else:
-            return "→"
+# 出力フォーマット（✓4 を除外し、矢印種別表示・ステップ数含む）
+def print_gco_sequence_summary(n_start, pre_steps, gco_seq, gco_rules):
+    total_steps = len(pre_steps) + len(gco_rules)
+    steps_str = " → ".join(map(str, pre_steps)) if pre_steps else ""
+    arrow_map = {
+        "R1": "→₁",
+        "R2": "→₂",
+        "R3": "→₃",
+        "⟳": "⟳",
+        "→2": "⇒₂",
+        "→1": "⇒₁"
+    }
 
-    print("通常のコラッツ操作（6n+4になるまで）:")
-    print(" → ".join(str(n) for n in pre_steps))
+    if "✓" in gco_rules:
+        index = gco_rules.index("✓")
+        gco_seq = gco_seq[:index] + gco_seq[index+1:]
+        gco_rules = gco_rules[:index] + gco_rules[index+1:]
 
-    print("\nGCO圧縮系列:")
-    output = [str(gco_seq[0])]
-    for i in range(len(gco_rules)):
-        arrow = color_arrow(gco_rules[i])
-        output.append(f"{arrow}{gco_seq[i + 1]}")
-    print(" ".join(output))
+    compressed_str = str(gco_seq[0])
+    for val, rule in zip(gco_seq[1:], gco_rules):
+        compressed_str += f" {arrow_map.get(rule, '→')} {val}"
 
-# ===== 実行部 =====
-if __name__ == "__main__":
-    initial_n = int(input("初期値を入力してください: "))
-    pre_steps, gco_seq, gco_rules = generate_gco_sequence(initial_n)
-    print_gco_sequence_colored_line(pre_steps, gco_seq, gco_rules)
+    summary = f"初期値: {n_start}, 総ステップ数: {total_steps}"
+    return summary, steps_str, compressed_str
