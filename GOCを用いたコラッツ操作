@@ -1,0 +1,91 @@
+# ===== ANSIカラー定義 =====
+def color_text(text, color):
+    colors = {
+        "red": "\033[91m",
+        "green": "\033[92m",
+        "yellow": "\033[93m",
+        "blue": "\033[94m",
+        "magenta": "\033[95m",
+        "cyan": "\033[96m",
+        "reset": "\033[0m"
+    }
+    return f"{colors.get(color, '')}{text}{colors['reset']}"
+
+# ===== GCOルール適用 =====
+def gco_step(a):
+    n = (a - 4) // 6
+    if n % 2 == 1:
+        a = (3 * a + 2) // 2
+        return a, "R1"
+    elif n % 4 == 0:
+        a = a // 2
+        return a, "R2"
+    elif n % 4 == 2:
+        a = (3 * a + 2) // 4
+        return a, "R3"
+    else:
+        return a, "Invalid"
+
+# ===== 初期値を6n+4に変換 =====
+def find_first_6n4(n):
+    steps = []
+    while (n - 4) % 6 != 0:
+        steps.append(n)
+        if n % 2 == 0:
+            n = n // 2
+        else:
+            n = 3 * n + 1
+    steps.append(n)
+    return n, steps
+
+# ===== GCO圧縮列を生成 =====
+def generate_gco_sequence(n_start, max_steps=1000):
+    first_a, pre_steps = find_first_6n4(n_start)
+    a = first_a
+    gco_seq = [a]
+    gco_rules = []
+
+    while a != 4 and len(gco_seq) < max_steps:
+        a, rule = gco_step(a)
+        if rule == "Invalid":
+            break
+        gco_seq.append(a)
+        gco_rules.append(rule)
+
+    if a == 4:
+        gco_seq.extend([2, 1])
+        gco_rules.extend(["→2", "→1"])
+
+    return pre_steps, gco_seq, gco_rules
+
+# ===== 色付き出力（矢印だけ） =====
+def print_gco_sequence_colored_line(pre_steps, gco_seq, gco_rules):
+    def color_arrow(rule):
+        if rule == "R1":
+            return color_text("→", "red")
+        elif rule == "R2":
+            return color_text("→", "yellow")
+        elif rule == "R3":
+            return color_text("→", "magenta")
+        elif rule == "→2":
+            return color_text("→", "blue")
+        elif rule == "→1":
+            return color_text("→", "green")
+        else:
+            return "→"
+
+    print("通常のコラッツ操作（6n+4になるまで）:")
+    print(" → ".join(str(n) for n in pre_steps))
+
+    print("\nGCO圧縮系列:")
+    output = [str(gco_seq[0])]
+    for i in range(len(gco_rules)):
+        arrow = color_arrow(gco_rules[i])
+        output.append(f"{arrow}{gco_seq[i + 1]}")
+    print(" ".join(output))
+
+# ===== 実行部 =====
+if __name__ == "__main__":
+    initial_n = int(input("初期値を入力してください: "))
+    pre_steps, gco_seq, gco_rules = generate_gco_sequence(initial_n)
+    print_gco_sequence_colored_line(pre_steps, gco_seq, gco_rules)
