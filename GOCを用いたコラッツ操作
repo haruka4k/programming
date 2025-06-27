@@ -9,7 +9,7 @@ def gco_step_modified_fixed(a):
     else:
         return a, "Invalid"
 
-# 初期値から最初の6n+4型になるまで通常のCollatz操作を進める
+# 最初の6n+4型になるまで通常のCollatz操作を進める
 def find_first_6n4_fixed(n):
     steps = []
     while n % 6 != 4:
@@ -51,7 +51,7 @@ def generate_gco_sequence_modified_fixed(n_start, max_steps=1000):
 
     return pre_steps, gco_seq, gco_rules
 
-# 出力フォーマット（✓4 を除外し、矢印種別表示・ステップ数含む）
+# 表示関数（✓4除去＋記号分類＋ステップ表示）
 def print_gco_sequence_summary(n_start, pre_steps, gco_seq, gco_rules):
     total_steps = len(pre_steps) + len(gco_rules)
     steps_str = " → ".join(map(str, pre_steps)) if pre_steps else ""
@@ -75,3 +75,20 @@ def print_gco_sequence_summary(n_start, pre_steps, gco_seq, gco_rules):
 
     summary = f"初期値: {n_start}, 総ステップ数: {total_steps}"
     return summary, steps_str, compressed_str
+
+# ==== 実行部 ====
+if __name__ == "__main__":
+    try:
+        user_input = int(input("初期値を入力してください（自然数）: "))
+        if user_input < 1:
+            raise ValueError("自然数を入力してください。")
+        pre_steps, gco_seq, gco_rules = generate_gco_sequence_modified_fixed(user_input)
+        summary, normal_part, compressed_part = print_gco_sequence_summary(user_input, pre_steps, gco_seq, gco_rules)
+
+        print("\n" + summary)
+        if normal_part:
+            print(normal_part)
+        print(compressed_part)
+
+    except ValueError as e:
+        print("エラー:", e)
