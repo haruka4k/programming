@@ -25,14 +25,14 @@ def build_fn(rule_sequence):
 def compute_growth_rate_fn(f_n):
     return sp.simplify((6 * f_n + 4) / (6 * n + 4))
 
-# 終端ルールに応じた構文条件 (n ≡ r mod m) を導出
-def extract_congruence_from_fn(f_n, terminal_rule):
+# 構文条件 (n ≡ r mod m) を導出（iGCO3含む、r補正あり）
+def extract_congruence_from_fn(f_n, terminal_rule, first_rule):
     if terminal_rule == 1:
         expr = (f_n - 1) / 2
     elif terminal_rule == 2:
         expr = f_n / 4
     elif terminal_rule == 3:
-        expr = (f_n - 6) / 12
+        expr = (f_n - 2) / 4
     else:
         raise ValueError("未知の終端ルール")
 
@@ -42,37 +42,38 @@ def extract_congruence_from_fn(f_n, terminal_rule):
     An = sp.expand(numer)
     A = An.coeff(n)
     B = sp.simplify(An - A * n)
-    A_inv = sp.mod_inverse(A, denom)
-    r = int((-B * A_inv) % denom)
-    return r, denom
+
+    if denom == 1 or A == 0:
+        r, m = 0, 1
+    else:
+        A_inv = sp.mod_inverse(A, denom)
+        r = int((-B * A_inv) % denom)
+        m = int(denom)
+
+    # r = 0 かつ first_rule ≠ 3 の場合、r = m に補正
+    if r == 0 and first_rule != 3:
+        r = m
+
+    return r, m
 
 # 全体解析を一括で行う関数
 def full_analysis(rule_sequence):
     f_n = build_fn(rule_sequence)
     growth_rate_fn = compute_growth_rate_fn(f_n)
     terminal_rule = rule_sequence[-1]
-    r, m = extract_congruence_from_fn(f_n, terminal_rule)
+    first_rule = rule_sequence[0]
+    r, m = extract_congruence_from_fn(f_n, terminal_rule, first_rule)
     f_r = f_n.subs(n, r)
 
     return {
         "操作系列": rule_sequence,
-        "増加量関数 f(n)": f_n,
-        "増加率関数 γ(n)": growth_rate_fn,
+        "f(n)": f_n,
+        "γ(n)": growth_rate_fn,
         "構文条件": f"n ≡ {r} mod {m}",
-        "最小の適用可能な n": r,
+        "最小の構文的 n": r,
+        "出力値 f(r)": f_r,
         "6n+4": 6 * r + 4,
         "6f(n)+4": 6 * f_r + 4,
         "増加量": sp.simplify(6 * f_r + 4 - (6 * r + 4)),
         "増加率（数値）": sp.simplify((6 * f_r + 4) / (6 * r + 4))
     }
-
-# 🔷 外部入力（カンマ区切りで操作系列を入力）
-user_input = input("操作系列をカンマで区切って入力してください（例: 1,2,2）: ")
-rule_sequence = [int(x.strip()) for x in user_input.split(',')]
-
-# 🔷 解析と出力
-result = full_analysis(rule_sequence)
-
-# 🔷 整形して出力
-for key, value in result.items():
-    print(f"\n・{key}:\n{value}")
