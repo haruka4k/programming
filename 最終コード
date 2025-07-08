@@ -77,3 +77,8 @@ def full_analysis(rule_sequence):
         "増加量": sp.simplify(6 * f_r + 4 - (6 * r + 4)),
         "増加率（数値）": sp.simplify((6 * f_r + 4) / (6 * r + 4))
     }
+
+# 整数から操作系列を受け取って解析する関数
+def analyze_from_int(series_code: int):
+    rule_sequence = [int(d) for d in str(series_code)]
+    return full_analysis(rule_sequence)
