@@ -1,4 +1,4 @@
-import sympy as sp
+  import sympy as sp
 
 # 変数の定義
 n = sp.Symbol('n')
@@ -82,3 +82,10 @@ def full_analysis(rule_sequence):
 def analyze_from_int(series_code: int):
     rule_sequence = [int(d) for d in str(series_code)]
     return full_analysis(rule_sequence)
+
+# 結果をきれいに表示する関数
+def print_analysis_result(result):
+    print("\n解析結果:")
+    print("---------")
+    for key, value in result.items():
+        print(f"{key}: {value}")
