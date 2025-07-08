@@ -1,9 +1,9 @@
-  import sympy as sp
+ import sympy as sp
 
-# 変数の定義
+# 変数定義
 n = sp.Symbol('n')
 
-# 各操作ルールの適用
+# 各ルールの適用
 def apply_rule(expr, rule):
     if rule == 1:
         return (2 * expr - 1) / 3
@@ -14,18 +14,18 @@ def apply_rule(expr, rule):
     else:
         raise ValueError("不正なルール")
 
-# 増加量関数 f(n) の構築
+# 合成関数 f(n)
 def build_fn(rule_sequence):
     expr = n
     for rule in rule_sequence:
         expr = apply_rule(expr, rule)
     return sp.simplify(expr)
 
-# 増加率関数 γ(n) = (6f(n)+4)/(6n+4)
+# 増加率 γ(n)
 def compute_growth_rate_fn(f_n):
     return sp.simplify((6 * f_n + 4) / (6 * n + 4))
 
-# 構文条件 (n ≡ r mod m) を導出（iGCO3含む、r補正あり）
+# 構文条件の導出（+補正）
 def extract_congruence_from_fn(f_n, terminal_rule, first_rule):
     if terminal_rule == 1:
         expr = (f_n - 1) / 2
@@ -50,16 +50,15 @@ def extract_congruence_from_fn(f_n, terminal_rule, first_rule):
         r = int((-B * A_inv) % denom)
         m = int(denom)
 
-    # r = 0 かつ first_rule ≠ 3 の場合、r = m に補正
     if r == 0 and first_rule != 3:
         r = m
 
     return r, m
 
-# 全体解析を一括で行う関数
+# 全体解析
 def full_analysis(rule_sequence):
     f_n = build_fn(rule_sequence)
-    growth_rate_fn = compute_growth_rate_fn(f_n)
+    γ_n = compute_growth_rate_fn(f_n)
     terminal_rule = rule_sequence[-1]
     first_rule = rule_sequence[0]
     r, m = extract_congruence_from_fn(f_n, terminal_rule, first_rule)
@@ -68,7 +67,7 @@ def full_analysis(rule_sequence):
     return {
         "操作系列": rule_sequence,
         "f(n)": f_n,
-        "γ(n)": growth_rate_fn,
+        "γ(n)": γ_n,
         "構文条件": f"n ≡ {r} mod {m}",
         "最小の構文的 n": r,
         "出力値 f(r)": f_r,
@@ -78,14 +77,26 @@ def full_analysis(rule_sequence):
         "増加率（数値）": sp.simplify((6 * f_r + 4) / (6 * r + 4))
     }
 
-# 整数から操作系列を受け取って解析する関数
-def analyze_from_int(series_code: int):
-    rule_sequence = [int(d) for d in str(series_code)]
-    return full_analysis(rule_sequence)
+# 解析実行用（カンマ入力対応）
+def analyze_from_input(input_str: str):
+    try:
+        rule_sequence = [int(x.strip()) for x in input_str.split(',')]
+        return full_analysis(rule_sequence)
+    except Exception as e:
+        print("入力エラー:", e)
+        return None
 
-# 結果をきれいに表示する関数
+# 結果表示
 def print_analysis_result(result):
-    print("\n解析結果:")
-    print("---------")
+    if result is None:
+        return
+    print("\n🔍 解析結果")
+    print("------------")
     for key, value in result.items():
         print(f"{key}: {value}")
+
+# 実行部（カンマ区切り入力）
+if __name__ == "__main__":
+    user_input = input("操作系列をカンマで区切って入力してください（例: 1,2,3）: ")
+    result = analyze_from_input(user_input)
+    print_analysis_result(result)
