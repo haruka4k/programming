@@ -1,0 +1,90 @@
+import sympy as sp
+from itertools import product
+import pandas as pd
+
+# 変数の定義
+n = sp.Symbol('n')
+
+# 各ルールの定義
+def apply_rule(expr, rule):
+    if rule == 1:
+        return (2 * expr - 1) / 3
+    elif rule == 2:
+        return 4 * expr / 3
+    elif rule == 3:
+        return 4 * expr + 2
+    else:
+        raise ValueError("不正なルール")
+
+# 極限値 a, b から候補の操作系列を探索
+def find_sequences(a, b, max_len=10):
+    solutions = []
+    for length in range(1, max_len + 1):
+        for seq in product([1, 2, 3], repeat=length):
+            x = seq.count(1)
+            y = seq.count(2)
+            z = seq.count(3)
+            if x + 2*y + 2*z == a and x + y == b:
+                solutions.append(seq)
+    return solutions
+
+# 増加量関数を構築
+def build_function(seq):
+    expr = n
+    for rule in seq:
+        expr = apply_rule(expr, rule)
+    return sp.simplify(expr)
+
+# 最小のnを探索
+def find_min_n(seq, expr, search_range=500):
+    for val in range(1, search_range):
+        tmp = val
+        valid = True
+        for rule in seq:
+            if rule == 1 and tmp % 3 != 2: valid = False; break
+            if rule == 2 and tmp % 3 != 0: valid = False; break
+            if rule == 3 and tmp % 3 != 1: valid = False; break
+            tmp = apply_rule(tmp, rule)
+        if valid:
+            return val
+    return None
+
+# メイン処理
+def analyze_limit(a, b):
+    seqs = find_sequences(a, b)
+    results = []
+    theoretical = sp.Rational(2)**a / sp.Rational(3)**b  # 極限値
+    for seq in seqs:
+        f = build_function(seq)
+        n_min = find_min_n(seq, f)
+        if n_min is not None:
+            gamma = (6*f.subs(n, n_min) + 4) / (6*n_min + 4)
+            gamma_val = sp.N(gamma)
+            ratio = gamma_val / float(theoretical)
+            diff = gamma_val - float(theoretical)
+            results.append({
+                "操作系列": "→".join(map(str, seq)),
+                "最小n": n_min,
+                "増加率": gamma_val,
+                "関数f(n)": str(f),
+                "理論極限値": float(theoretical),
+                "比(γ/極限)": float(ratio),
+                "差分(γ-極限)": float(diff)
+            })
+    df = pd.DataFrame(results)
+    if not df.empty:
+        df = df.sort_values(by="増加率").reset_index(drop=True)
+    return df
+
+# --- メイン実行部 ---
+if __name__ == "__main__":
+    ab_input = input("a,b の値をカンマ区切りで入力してください: ")
+    a, b = map(int, ab_input.split(","))
+    
+    df = analyze_limit(a, b)
+    
+    if df.empty:
+        print("該当する操作系列は見つかりませんでした。")
+    else:
+        print("\n解析結果:")
+        print(df.to_string(index=False))
