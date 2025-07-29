@@ -2,7 +2,7 @@ import sympy as sp
 from itertools import product
 import pandas as pd
 
-# 変数の定義
+# 変数定義
 n = sp.Symbol('n')
 
 # 各ルールの定義
@@ -16,8 +16,8 @@ def apply_rule(expr, rule):
     else:
         raise ValueError("不正なルール")
 
-# 極限値 a, b から候補の操作系列を探索
-def find_sequences(a, b, max_len=10):
+# 候補系列を探索
+def find_sequences(a, b, max_len=20):
     solutions = []
     for length in range(1, max_len + 1):
         for seq in product([1, 2, 3], repeat=length):
@@ -28,7 +28,7 @@ def find_sequences(a, b, max_len=10):
                 solutions.append(seq)
     return solutions
 
-# 増加量関数を構築
+# 関数を構築
 def build_function(seq):
     expr = n
     for rule in seq:
@@ -49,7 +49,7 @@ def find_min_n(seq, expr, search_range=500):
             return val
     return None
 
-# メイン処理
+# メイン解析処理
 def analyze_limit(a, b):
     seqs = find_sequences(a, b)
     results = []
@@ -65,7 +65,7 @@ def analyze_limit(a, b):
             results.append({
                 "操作系列": "→".join(map(str, seq)),
                 "最小n": n_min,
-                "増加率": gamma_val,
+                "増加率": float(gamma_val),
                 "関数f(n)": str(f),
                 "理論極限値": float(theoretical),
                 "比(γ/極限)": float(ratio),
